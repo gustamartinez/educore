@@ -1,37 +1,40 @@
 package edu.uam.educore.view;
 
+import edu.uam.educore.dao.ListaEdificioRepo;
+import edu.uam.educore.dao.ListaEmpleadoRepo;
 import edu.uam.educore.dao.ListaEstudianteRepo;
+import edu.uam.educore.dao.ListaSeccionRepo;
 import java.util.Scanner;
 
 public class MenuPrincipalView extends VistaBase {
 
   private final EstudianteView estudianteView;
+  private final EmpleadoView empleadoView;
+  private final AcademicoView academicoView;
 
   public MenuPrincipalView(Scanner scanner) {
     super(scanner);
 
-    // Repositorios compartidos — una sola instancia por entidad.
-    // Los módulos que necesiten acceder a los mismos datos reciben la misma instancia.
     ListaEstudianteRepo estudianteRepo = new ListaEstudianteRepo();
-    // ListaEmpleadoRepo empleadoRepo = new ListaEmpleadoRepo();  // TODO: Módulo Empleados
-    // ListaEdificioRepo edificioRepo = new ListaEdificioRepo();  // TODO: Módulo Académico
-    // ListaSeccionRepo  seccionRepo  = new ListaSeccionRepo();   // TODO: Módulo Académico
+    ListaEmpleadoRepo empleadoRepo = new ListaEmpleadoRepo();
+    ListaEdificioRepo edificioRepo = new ListaEdificioRepo();
+    ListaSeccionRepo seccionRepo = new ListaSeccionRepo();
 
     this.estudianteView = new EstudianteView(scanner, estudianteRepo);
-    // this.empleadoView = new EmpleadoView(scanner, empleadoRepo);
-    // this.edificioView = new EdificioView(scanner, edificioRepo);
-    // this.seccionView  = new SeccionView(scanner, seccionRepo, empleadoRepo, estudianteRepo,
-    // edificioRepo);
+    this.empleadoView = new EmpleadoView(scanner, empleadoRepo);
+    this.academicoView =
+        new AcademicoView(scanner, edificioRepo, seccionRepo, empleadoRepo, estudianteRepo);
   }
 
   public void iniciar() {
     mostrarBienvenida();
     boolean corriendo = true;
+
     while (corriendo) {
       switch (mostrarMenuPrincipal()) {
         case 1 -> estudianteView.iniciar();
-        case 2 -> mostrarMensaje("Módulo de empleados — pendiente (mismo patrón que Estudiantes)");
-        case 3 -> mostrarMensaje("Módulo académico — pendiente (mismo patrón que Estudiantes)");
+        case 2 -> empleadoView.iniciar();
+        case 3 -> academicoView.iniciar();
         case 0 -> {
           mostrarMensaje("¡Hasta pronto!");
           corriendo = false;
