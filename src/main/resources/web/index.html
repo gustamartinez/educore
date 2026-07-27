@@ -408,10 +408,13 @@
               <button class="editar" @click="editarEdificio(ed)">Editar</button>
               <button class="eliminar" @click="eliminarEdificio(ed.id)">Eliminar</button>
               <div class="aulas">
-                <span class="chip" v-for="a in ed.aulas" :key="a.id">
-                  Aula {{ a.numero }} (ID {{ a.id }}) · {{ a.tipo }} · cap. {{ a.capacidad }}
-                </span>
-                <span v-if="!ed.aulas.length">Sin aulas</span>
+          <span class="chip" v-for="a in ed.aulas" :key="a.id">
+          Aula {{ a.numero }} (ID {{ a.id }}) · {{ a.tipo }} · cap. {{ a.capacidad }}
+          <button type="button" class="eliminar"
+                @click="eliminarAula(ed.id, a.id)">Eliminar</button>
+           </span>
+          <span v-if="!ed.aulas.length">Sin aulas</span>
+</div>
               </div>
             </div>
           </template>
@@ -740,6 +743,21 @@
           this.cargarEdificios();
         },
 
+eliminarAula(edificioId, aulaId) {
+  pedirConfirmacion('¿Eliminar esta aula?', async () => {
+    try {
+      await llamar(
+        '/api/edificios/' + edificioId + '/aulas/' + aulaId,
+        { method:'DELETE' }
+      );
+    } catch (e) {
+      return;
+    }
+
+    emitirToast('exito', 'Aula eliminada.');
+    this.cargarEdificios();
+  });
+},
         // Secciones
         async cargarSecciones() {
           this.cargando.secciones = true;

@@ -361,6 +361,24 @@ public class ServidorApi {
               .json(
                   AulaDto.desde(aula));
         });
+    cfg.routes.delete(
+    "/api/edificios/{id}/aulas/{aulaId}",
+    ctx -> {
+
+      int edificioId =
+          Integer.parseInt(
+              ctx.pathParam("id"));
+
+      int aulaId =
+          Integer.parseInt(
+              ctx.pathParam("aulaId"));
+
+      controller.eliminarAula(
+          edificioId,
+          aulaId);
+
+      ctx.status(204);
+    });
   }
 
   // ── Secciones ──
