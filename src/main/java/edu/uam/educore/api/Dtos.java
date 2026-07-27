@@ -1,5 +1,8 @@
 package edu.uam.educore.api;
 
+import edu.uam.educore.model.infraestructura.Aula;
+import edu.uam.educore.model.infraestructura.Edificio;
+import edu.uam.educore.model.infraestructura.TipoAula;
 import edu.uam.educore.model.personas.Empleado;
 import edu.uam.educore.model.personas.Estudiante;
 import edu.uam.educore.model.personas.EstudianteBecado;
@@ -9,12 +12,10 @@ import java.util.List;
 
 /**
  * Un DTO (Data Transfer Object) es un record de solo datos que traduce una entidad de dominio
- * (Empleado, Edificio, Seccion...) al JSON que consume el frontend, y viceversa. No tiene lógica de
- * negocio ni reemplaza al modelo: Empleado sigue siendo la clase real con sus reglas; el DTO solo
- * "aplana" lo necesario para una respuesta HTTP. Por eso cada recurso tiene dos: un `...Request`
- * (lo que llega del cliente al crear/actualizar) y un `...Dto` (lo que se devuelve).
+ * (Empleado, Edificio, Seccion...) al JSON que consume el frontend, y viceversa.
  */
 public final class Dtos {
+
   private Dtos() {}
 
   // ── Estudiante ──
@@ -93,41 +94,54 @@ public final class Dtos {
     }
   }
 
-  // ── Edificio / Aula (P1 de cada grupo) ──
-  // TODO(estudiante · P1): descomenten este bloque completo cuando trabajemos
-  // el módulo Edificio/Aula.
+  // ── Edificio / Aula ──
 
-  // public record EdificioRequest(String codigo, String nombre) {}
-  //
-  // public record AulaRequest(String numero, int capacidad, TipoAula tipo) {}
-  //
-  // public record AulaDto(int id, String numero, int capacidad, String tipo) {
-  //   public static AulaDto desde(Aula a) {
-  //     return new AulaDto(a.getId(), a.getNumero(), a.getCapacidad(), a.getTipo().name());
-  //   }
-  // }
-  //
-  // public record EdificioDto(int id, String codigo, String nombre, List<AulaDto> aulas) {
-  //   public static EdificioDto desde(Edificio e) {
-  //     return new EdificioDto(
-  //         e.getId(),
-  //         e.getCodigo(),
-  //         e.getNombre(),
-  //         e.getAulas().stream().map(AulaDto::desde).toList());
-  //   }
-  //
-  //   public static List<EdificioDto> listaDesde(List<Edificio> edificios) {
-  //     List<EdificioDto> resultado = new ArrayList<>();
-  //     for (Edificio e : edificios) {
-  //       resultado.add(EdificioDto.desde(e));
-  //     }
-  //     return resultado;
-  //   }
-  // }
+  public record EdificioRequest(String codigo, String nombre) {}
 
-  // ── Sección (P1 de cada grupo) ──
-  // TODO(estudiante · P1): descomenten este bloque completo cuando trabajemos
-  // el módulo Sección.
+  public record AulaRequest(String numero, int capacidad, TipoAula tipo) {}
+
+  public record AulaDto(
+      int id,
+      String numero,
+      int capacidad,
+      String tipo) {
+
+    public static AulaDto desde(Aula a) {
+      return new AulaDto(
+          a.getId(),
+          a.getNumero(),
+          a.getCapacidad(),
+          a.getTipo().name());
+    }
+  }
+
+  public record EdificioDto(
+      int id,
+      String codigo,
+      String nombre,
+      List<AulaDto> aulas) {
+
+    public static EdificioDto desde(Edificio e) {
+      return new EdificioDto(
+          e.getId(),
+          e.getCodigo(),
+          e.getNombre(),
+          e.getAulas().stream().map(AulaDto::desde).toList());
+    }
+
+    public static List<EdificioDto> listaDesde(List<Edificio> edificios) {
+      List<EdificioDto> resultado = new ArrayList<>();
+
+      for (Edificio e : edificios) {
+        resultado.add(EdificioDto.desde(e));
+      }
+
+      return resultado;
+    }
+  }
+
+  // ── Sección ──
+  // Se activa cuando trabajemos el módulo Sección.
 
   // public record SeccionRequest(String codigo, String nombre, int aulaId, int docenteId) {}
   //
@@ -164,14 +178,16 @@ public final class Dtos {
   //
   //   public static List<SeccionDto> listaDesde(List<Seccion> secciones) {
   //     List<SeccionDto> resultado = new ArrayList<>();
+  //
   //     for (Seccion s : secciones) {
   //       resultado.add(SeccionDto.desde(s));
   //     }
+  //
   //     return resultado;
   //   }
   // }
 
-  // ── Matrícula (puente HTTP→socket) ──
+  // ── Matrícula ──
 
   public record MatriculaRequest(String archivo, String contenido) {}
 }

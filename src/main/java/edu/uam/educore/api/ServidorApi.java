@@ -1,17 +1,26 @@
 package edu.uam.educore.api;
 
+import edu.uam.educore.api.Dtos.AulaDto;
+import edu.uam.educore.api.Dtos.AulaRequest;
+import edu.uam.educore.api.Dtos.EdificioDto;
+import edu.uam.educore.api.Dtos.EdificioRequest;
 import edu.uam.educore.api.Dtos.EmpleadoDto;
 import edu.uam.educore.api.Dtos.EmpleadoRequest;
 import edu.uam.educore.api.Dtos.EstudianteDto;
 import edu.uam.educore.api.Dtos.EstudianteRequest;
 import edu.uam.educore.api.Dtos.MatriculaRequest;
+import edu.uam.educore.controller.EdificioController;
 import edu.uam.educore.controller.EmpleadoController;
 import edu.uam.educore.controller.EstudianteController;
+import edu.uam.educore.dao.EdificioRepoSql;
 import edu.uam.educore.dao.EmpleadoRepoSql;
 import edu.uam.educore.dao.EstudianteRepoSql;
 import edu.uam.educore.dao.ListaEstudianteRepo;
 import edu.uam.educore.dao.Repositorio;
 import edu.uam.educore.db.ConfiguracionBD;
+import edu.uam.educore.model.infraestructura.Aula;
+import edu.uam.educore.model.infraestructura.Edificio;
+import edu.uam.educore.model.infraestructura.TipoAula;
 import edu.uam.educore.model.personas.Empleado;
 import edu.uam.educore.model.personas.Estudiante;
 import io.javalin.Javalin;
@@ -28,10 +37,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Arma EduCore como app web. Estudiante corre sobre base de datos (referencia) con su controlador
- * real. Empleado, Edificio/Aula y Sección son de cada grupo (P1).
- */
 public class ServidorApi {
 
   public static void iniciar(int puerto) throws IOException {
@@ -39,17 +44,25 @@ public class ServidorApi {
     Repositorio<Estudiante> estudianteRepo;
 
     try {
-      estudianteRepo = new EstudianteRepoSql(ConfiguracionBD.desdeArchivo(".env"));
+      estudianteRepo =
+          new EstudianteRepoSql(
+              ConfiguracionBD.desdeArchivo(".env"));
     } catch (IOException e) {
-      // Sin .env legible caemos a memoria para no bloquear el arranque en desarrollo.
       estudianteRepo = new ListaEstudianteRepo();
     }
 
-    EstudianteController estudianteController = new EstudianteController(estudianteRepo);
+    EstudianteController estudianteController =
+        new EstudianteController(estudianteRepo);
 
     EmpleadoController empleadoController =
         new EmpleadoController(
-            new EmpleadoRepoSql(ConfiguracionBD.desdeArchivo(".env")));
+            new EmpleadoRepoSql(
+                ConfiguracionBD.desdeArchivo(".env")));
+
+    EdificioController edificioController =
+        new EdificioController(
+            new EdificioRepoSql(
+                ConfiguracionBD.desdeArchivo(".env")));
 
     Javalin app =
         Javalin.create(
@@ -61,16 +74,27 @@ public class ServidorApi {
               cfg.routes.exception(
                   IllegalArgumentException.class,
                   (e, ctx) ->
-                      ctx.status(400).json(Map.of("error", e.getMessage())));
+                      ctx.status(400)
+                          .json(Map.of("error", e.getMessage())));
 
               cfg.routes.exception(
                   Exception.class,
                   (e, ctx) ->
-                      ctx.status(500).json(Map.of("error", e.getMessage())));
+                      ctx.status(500)
+                          .json(Map.of("error", e.getMessage())));
 
-              registrarEstudiantes(cfg, estudianteController);
-              registrarEmpleados(cfg, empleadoController);
-              registrarEdificios(cfg);
+              registrarEstudiantes(
+                  cfg,
+                  estudianteController);
+
+              registrarEmpleados(
+                  cfg,
+                  empleadoController);
+
+              registrarEdificios(
+                  cfg,
+                  edificioController);
+
               registrarSecciones(cfg);
               registrarMatricula(cfg);
               registrarReporte(cfg);
@@ -93,8 +117,7 @@ public class ServidorApi {
         ctx -> {
 
           List<EstudianteDto> lista =
-              controller
-                  .listar()
+              controller.listar()
                   .stream()
                   .map(EstudianteDto::desde)
                   .toList();
@@ -107,7 +130,8 @@ public class ServidorApi {
         ctx -> {
 
           EstudianteRequest r =
-              ctx.bodyAsClass(EstudianteRequest.class);
+              ctx.bodyAsClass(
+                  EstudianteRequest.class);
 
           Estudiante creado =
               "BECADO".equalsIgnoreCase(r.tipo())
@@ -125,8 +149,8 @@ public class ServidorApi {
                       r.email(),
                       r.carnet());
 
-          ctx.status(201).json(
-              EstudianteDto.desde(creado));
+          ctx.status(201)
+              .json(EstudianteDto.desde(creado));
         });
 
     cfg.routes.put(
@@ -141,7 +165,7 @@ public class ServidorApi {
               ctx.bodyAsClass(
                   EstudianteRequest.class);
 
-          Estudiante e =
+          Estudiante estudiante =
               controller.actualizar(
                   id,
                   r.nombre(),
@@ -151,7 +175,7 @@ public class ServidorApi {
                   r.porcentajeBeca());
 
           ctx.json(
-              EstudianteDto.desde(e));
+              EstudianteDto.desde(estudiante));
         });
 
     cfg.routes.delete(
@@ -201,8 +225,8 @@ public class ServidorApi {
                       r.fechaIngreso()),
                   r.tipo());
 
-          ctx.status(201).json(
-              EmpleadoDto.desde(creado));
+          ctx.status(201)
+              .json(EmpleadoDto.desde(creado));
         });
 
     cfg.routes.put(
@@ -247,61 +271,95 @@ public class ServidorApi {
   // ── Edificios / Aulas ──
 
   private static void registrarEdificios(
-      JavalinConfig cfg) {
+      JavalinConfig cfg,
+      EdificioController controller) {
 
     cfg.routes.get(
         "/api/edificios",
         ctx -> {
 
-          ctx.status(501)
-              .json(
-                  Map.of(
-                      "error",
-                      "edificios: pendiente de implementar"));
+          List<Edificio> edificios =
+              controller.listarEdificios();
+
+          ctx.json(
+              EdificioDto.listaDesde(edificios));
         });
 
     cfg.routes.post(
         "/api/edificios",
         ctx -> {
 
-          ctx.status(501)
+          EdificioRequest r =
+              ctx.bodyAsClass(
+                  EdificioRequest.class);
+
+          Edificio creado =
+              controller.registrarEdificio(
+                  r.codigo(),
+                  r.nombre());
+
+          ctx.status(201)
               .json(
-                  Map.of(
-                      "error",
-                      "edificios: pendiente de implementar"));
+                  EdificioDto.desde(creado));
         });
 
     cfg.routes.put(
-        "/api/edificios/{id}",
-        ctx -> {
+    "/api/edificios/{id}",
+    ctx -> {
 
-          ctx.status(501)
-              .json(
-                  Map.of(
-                      "error",
-                      "edificios: pendiente de implementar"));
-        });
+      int id =
+          Integer.parseInt(
+              ctx.pathParam("id"));
+
+      EdificioRequest r =
+          ctx.bodyAsClass(
+              EdificioRequest.class);
+
+      Edificio actualizado =
+          controller.actualizarEdificio(
+              id,
+              r.codigo(),
+              r.nombre());
+
+      ctx.json(
+          EdificioDto.desde(actualizado));
+    });
 
     cfg.routes.delete(
         "/api/edificios/{id}",
         ctx -> {
 
-          ctx.status(501)
-              .json(
-                  Map.of(
-                      "error",
-                      "edificios: pendiente de implementar"));
+          controller.eliminarEdificio(
+              Integer.parseInt(
+                  ctx.pathParam("id")));
+
+          ctx.status(204);
         });
 
     cfg.routes.post(
         "/api/edificios/{id}/aulas",
         ctx -> {
 
-          ctx.status(501)
+          int edificioId =
+              Integer.parseInt(
+                  ctx.pathParam("id"));
+
+          AulaRequest r =
+              ctx.bodyAsClass(
+                  AulaRequest.class);
+
+          Aula aula =
+              controller.agregarAula(
+                  edificioId,
+                  r.numero(),
+                  r.capacidad(),
+                  r.tipo() != null
+                      ? r.tipo()
+                      : TipoAula.REGULAR);
+
+          ctx.status(201)
               .json(
-                  Map.of(
-                      "error",
-                      "edificios: pendiente de implementar"));
+                  AulaDto.desde(aula));
         });
   }
 
@@ -312,69 +370,57 @@ public class ServidorApi {
 
     cfg.routes.get(
         "/api/secciones",
-        ctx -> {
-
-          ctx.status(501)
-              .json(
-                  Map.of(
-                      "error",
-                      "secciones: pendiente de implementar"));
-        });
+        ctx ->
+            ctx.status(501)
+                .json(
+                    Map.of(
+                        "error",
+                        "secciones: pendiente de implementar")));
 
     cfg.routes.post(
         "/api/secciones",
-        ctx -> {
-
-          ctx.status(501)
-              .json(
-                  Map.of(
-                      "error",
-                      "secciones: pendiente de implementar"));
-        });
+        ctx ->
+            ctx.status(501)
+                .json(
+                    Map.of(
+                        "error",
+                        "secciones: pendiente de implementar")));
 
     cfg.routes.put(
         "/api/secciones/{id}",
-        ctx -> {
-
-          ctx.status(501)
-              .json(
-                  Map.of(
-                      "error",
-                      "secciones: pendiente de implementar"));
-        });
+        ctx ->
+            ctx.status(501)
+                .json(
+                    Map.of(
+                        "error",
+                        "secciones: pendiente de implementar")));
 
     cfg.routes.delete(
         "/api/secciones/{id}",
-        ctx -> {
-
-          ctx.status(501)
-              .json(
-                  Map.of(
-                      "error",
-                      "secciones: pendiente de implementar"));
-        });
+        ctx ->
+            ctx.status(501)
+                .json(
+                    Map.of(
+                        "error",
+                        "secciones: pendiente de implementar")));
 
     cfg.routes.post(
         "/api/secciones/{id}/estudiantes",
-        ctx -> {
-
-          ctx.status(501)
-              .json(
-                  Map.of(
-                      "error",
-                      "secciones: pendiente de implementar"));
-        });
+        ctx ->
+            ctx.status(501)
+                .json(
+                    Map.of(
+                        "error",
+                        "secciones: pendiente de implementar")));
 
     cfg.routes.delete(
         "/api/secciones/{id}/estudiantes/{estudianteId}",
-        ctx -> {
-
-          ctx.status(501)
-              .json(
-                  Map.of(
-                      "error",
-                      "secciones: pendiente de implementar"));
-        });
+        ctx ->
+            ctx.status(501)
+                .json(
+                    Map.of(
+                        "error",
+                        "secciones: pendiente de implementar")));
   }
 
   // ── Matrícula ──
@@ -405,8 +451,7 @@ public class ServidorApi {
                   System.getenv(
                       "ENTRADA_DIR"));
 
-          Files.createDirectories(
-              entrada);
+          Files.createDirectories(entrada);
 
           Files.writeString(
               entrada.resolve(archivo),
@@ -421,18 +466,15 @@ public class ServidorApi {
                   System.getenv(
                       "MATRICULA_PORT"));
 
-          try (
-              Socket socket =
+          try (Socket socket =
                   new Socket(
                       host,
                       puertoMatricula);
-
               PrintWriter out =
                   new PrintWriter(
                       socket.getOutputStream(),
                       true,
                       StandardCharsets.UTF_8);
-
               BufferedReader in =
                   new BufferedReader(
                       new InputStreamReader(
@@ -440,8 +482,7 @@ public class ServidorApi {
                           StandardCharsets.UTF_8))) {
 
             out.println(
-                "MATRICULAR "
-                    + archivo);
+                "MATRICULAR " + archivo);
 
             String respuesta =
                 in.readLine();
@@ -474,18 +515,15 @@ public class ServidorApi {
                   System.getenv(
                       "REPORTE_PORT"));
 
-          try (
-              Socket socket =
+          try (Socket socket =
                   new Socket(
                       host,
                       puertoReporte);
-
               PrintWriter out =
                   new PrintWriter(
                       socket.getOutputStream(),
                       true,
                       StandardCharsets.UTF_8);
-
               BufferedReader in =
                   new BufferedReader(
                       new InputStreamReader(
@@ -498,8 +536,7 @@ public class ServidorApi {
                 in.readLine();
 
             if (encabezado == null
-                || !encabezado.startsWith(
-                    "200 ")) {
+                || !encabezado.startsWith("200 ")) {
 
               ctx.status(502)
                   .json(
