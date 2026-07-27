@@ -28,6 +28,21 @@ CREATE TABLE empleado (
   fecha_ingreso DATE NOT NULL
 );
 
+CREATE TABLE edificio (
+  id      INT PRIMARY KEY,
+  codigo  VARCHAR(50)  NOT NULL,
+  nombre  VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE aula (
+  id          INT PRIMARY KEY,
+  numero      VARCHAR(50) NOT NULL,
+  capacidad   INT         NOT NULL,
+  tipo        VARCHAR(30) NOT NULL,
+  edificio_id INT         NOT NULL,
+  FOREIGN KEY (edificio_id) REFERENCES edificio(id)
+);
+
 -- ── Datos semilla ────────────────────────────────────────────────────────────
 INSERT INTO estudiante (tipo, nombre, apellidos, email, carnet, porcentaje_beca) VALUES
   ('REGULAR', 'Ana',   'Rojas Mora',   'ana.rojas@uam.edu',   '202410000001', NULL),
