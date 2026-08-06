@@ -36,6 +36,8 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import edu.uam.educore.controller.SeccionController;
+import edu.uam.educore.dao.ListaSeccionRepo;
 
 public class ServidorApi {
 
@@ -54,15 +56,26 @@ public class ServidorApi {
     EstudianteController estudianteController =
         new EstudianteController(estudianteRepo);
 
+    EmpleadoRepoSql empleadoRepo =
+    new EmpleadoRepoSql(
+        ConfiguracionBD.desdeArchivo(".env"));
+
+    EdificioRepoSql edificioRepo =
+    new EdificioRepoSql(
+        ConfiguracionBD.desdeArchivo(".env"));
+
     EmpleadoController empleadoController =
-        new EmpleadoController(
-            new EmpleadoRepoSql(
-                ConfiguracionBD.desdeArchivo(".env")));
+    new EmpleadoController(empleadoRepo);
 
     EdificioController edificioController =
-        new EdificioController(
-            new EdificioRepoSql(
-                ConfiguracionBD.desdeArchivo(".env")));
+    new EdificioController(edificioRepo);
+
+    SeccionController seccionController =
+    new SeccionController(
+        new ListaSeccionRepo(),
+        empleadoRepo,
+        estudianteRepo,
+        edificioRepo);
 
     Javalin app =
         Javalin.create(
@@ -95,7 +108,9 @@ public class ServidorApi {
                   cfg,
                   edificioController);
 
-              registrarSecciones(cfg);
+              registrarSecciones(
+               cfg,
+               seccionController);
               registrarMatricula(cfg);
               registrarReporte(cfg);
             });
@@ -412,16 +427,15 @@ public class ServidorApi {
   // ── Secciones ──
 
   private static void registrarSecciones(
-      JavalinConfig cfg) {
+    JavalinConfig cfg,
+    SeccionController controller) {
 
     cfg.routes.get(
-        "/api/secciones",
-        ctx ->
-            ctx.status(501)
-                .json(
-                    Map.of(
-                        "error",
-                        "secciones: pendiente de implementar")));
+    "/api/secciones",
+    ctx ->
+        ctx.json(
+            Dtos.SeccionDto.listaDesde(
+                controller.listar())));
 
     cfg.routes.post(
         "/api/secciones",
