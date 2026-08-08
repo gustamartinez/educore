@@ -37,7 +37,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import edu.uam.educore.controller.SeccionController;
-import edu.uam.educore.dao.ListaSeccionRepo;
+import edu.uam.educore.dao.SeccionRepoSql;
+import edu.uam.educore.model.academico.Seccion;
 
 public class ServidorApi {
 
@@ -72,7 +73,8 @@ public class ServidorApi {
 
     SeccionController seccionController =
     new SeccionController(
-        new ListaSeccionRepo(),
+        new SeccionRepoSql(
+            ConfiguracionBD.desdeArchivo(".env")),
         empleadoRepo,
         estudianteRepo,
         edificioRepo);
@@ -438,22 +440,48 @@ public class ServidorApi {
                 controller.listar())));
 
     cfg.routes.post(
-        "/api/secciones",
-        ctx ->
-            ctx.status(501)
-                .json(
-                    Map.of(
-                        "error",
-                        "secciones: pendiente de implementar")));
+    "/api/secciones",
+    ctx -> {
+
+      Dtos.SeccionRequest r =
+          ctx.bodyAsClass(
+              Dtos.SeccionRequest.class);
+
+      var creada =
+          controller.registrar(
+              r.codigo(),
+              r.nombre(),
+              r.aulaId(),
+              r.docenteId());
+
+      ctx.status(201)
+          .json(
+              Dtos.SeccionDto.desde(creada));
+    });
 
     cfg.routes.put(
-        "/api/secciones/{id}",
-        ctx ->
-            ctx.status(501)
-                .json(
-                    Map.of(
-                        "error",
-                        "secciones: pendiente de implementar")));
+    "/api/secciones/{id}",
+    ctx -> {
+
+      int id =
+          Integer.parseInt(
+              ctx.pathParam("id"));
+
+      Dtos.SeccionRequest r =
+          ctx.bodyAsClass(
+              Dtos.SeccionRequest.class);
+
+      var actualizada =
+          controller.actualizar(
+              id,
+              r.codigo(),
+              r.nombre(),
+              r.aulaId(),
+              r.docenteId());
+
+      ctx.json(
+          Dtos.SeccionDto.desde(actualizada));
+    });
 
     cfg.routes.delete(
         "/api/secciones/{id}",
@@ -465,22 +493,54 @@ public class ServidorApi {
                         "secciones: pendiente de implementar")));
 
     cfg.routes.post(
-        "/api/secciones/{id}/estudiantes",
-        ctx ->
-            ctx.status(501)
-                .json(
-                    Map.of(
-                        "error",
-                        "secciones: pendiente de implementar")));
+    "/api/secciones/{id}/estudiantes",
+    ctx -> {
 
-    cfg.routes.delete(
-        "/api/secciones/{id}/estudiantes/{estudianteId}",
-        ctx ->
-            ctx.status(501)
-                .json(
-                    Map.of(
-                        "error",
-                        "secciones: pendiente de implementar")));
+      int seccionId =
+          Integer.parseInt(
+              ctx.pathParam("id"));
+
+      Dtos.InscripcionRequest r =
+          ctx.bodyAsClass(
+              Dtos.InscripcionRequest.class);
+
+      controller.agregarEstudiante(
+          seccionId,
+          r.estudianteId());
+
+      Seccion seccion =
+          controller.buscarPorId(
+              seccionId);
+
+      ctx.json(
+          Dtos.SeccionDto.desde(
+              seccion));
+    });
+
+cfg.routes.delete(
+    "/api/secciones/{id}/estudiantes/{estudianteId}",
+    ctx -> {
+
+      int seccionId =
+          Integer.parseInt(
+              ctx.pathParam("id"));
+
+      int estudianteId =
+          Integer.parseInt(
+              ctx.pathParam("estudianteId"));
+
+      controller.removerEstudiante(
+          seccionId,
+          estudianteId);
+
+      Seccion seccion =
+          controller.buscarPorId(
+              seccionId);
+
+      ctx.json(
+          Dtos.SeccionDto.desde(
+              seccion));
+    });
   }
 
   // ── Matrícula ──

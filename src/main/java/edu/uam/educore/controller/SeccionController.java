@@ -80,7 +80,73 @@ public class SeccionController {
     Optional<Seccion> resultado = seccionRepo.buscarPorId(id);
     return resultado.orElse(null);
   }
+  public Seccion actualizar(
+    int id,
+    String codigo,
+    String nombre,
+    int aulaId,
+    int docenteId)
+    throws Exception {
 
+  if (codigo == null || codigo.isBlank()
+      || nombre == null || nombre.isBlank()) {
+    throw new IllegalArgumentException(
+        "Código y nombre de la sección son obligatorios.");
+  }
+
+  if (aulaId <= 0 || docenteId <= 0) {
+    throw new IllegalArgumentException(
+        "Los IDs de aula y docente deben ser mayores que cero.");
+  }
+
+  Seccion seccion = buscarPorId(id);
+
+  if (seccion == null) {
+    throw new IllegalArgumentException(
+        "No existe sección con ID " + id + ".");
+  }
+
+  Aula aula = null;
+
+  for (Object obj : edificioRepo.buscarTodos()) {
+    Edificio edificio = (Edificio) obj;
+
+    for (Aula a : edificio.getAulas()) {
+      if (a.getId() == aulaId) {
+        aula = a;
+        break;
+      }
+    }
+
+    if (aula != null) {
+      break;
+    }
+  }
+
+  if (aula == null) {
+    throw new IllegalArgumentException(
+        "No existe aula con ID " + aulaId + ".");
+  }
+
+  Empleado docente =
+      (Empleado) empleadoRepo.buscarPorId(docenteId)
+          .orElse(null);
+
+  if (docente == null
+      || docente.getTipoEmpleado() != TipoEmpleado.DOCENTE) {
+    throw new IllegalArgumentException(
+        "El empleado indicado no existe o no es docente.");
+  }
+
+  seccion.setCodigo(codigo);
+  seccion.setNombre(nombre);
+  seccion.setAula(aula);
+  seccion.setDocente(docente);
+
+  seccionRepo.actualizar(seccion);
+
+  return seccion;
+    }
   public void agregarEstudiante(int seccionId, int estudianteId) throws Exception {
     if (seccionId <= 0 || estudianteId <= 0) {
       throw new IllegalArgumentException("Los IDs deben ser mayores que cero.");

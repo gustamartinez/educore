@@ -43,6 +43,24 @@ CREATE TABLE aula (
   FOREIGN KEY (edificio_id) REFERENCES edificio(id)
 );
 
+CREATE TABLE seccion (
+    id          INT PRIMARY KEY,
+    codigo      VARCHAR(50)  NOT NULL UNIQUE,
+    nombre      VARCHAR(100) NOT NULL,
+    docente_id  INT          NOT NULL,
+    aula_id     INT          NOT NULL,
+    FOREIGN KEY (docente_id) REFERENCES empleado(id),
+    FOREIGN KEY (aula_id) REFERENCES aula(id)
+);
+
+CREATE TABLE matricula (
+    estudiante_id INT NOT NULL,
+    seccion_id    INT NOT NULL,
+    PRIMARY KEY (estudiante_id, seccion_id),
+    FOREIGN KEY (estudiante_id) REFERENCES estudiante(id),
+    FOREIGN KEY (seccion_id) REFERENCES seccion(id)
+);
+
 -- ── Datos semilla ────────────────────────────────────────────────────────────
 INSERT INTO estudiante (tipo, nombre, apellidos, email, carnet, porcentaje_beca) VALUES
   ('REGULAR', 'Ana',   'Rojas Mora',   'ana.rojas@uam.edu',   '202410000001', NULL),

@@ -56,6 +56,38 @@ public class Seccion {
         return aula;
     }
 
+    // ===== SETTERS =====
+
+    public void setCodigo(String codigo) {
+        if (codigo == null || codigo.isBlank()) {
+            throw new IllegalArgumentException("El código de la sección es obligatorio.");
+        }
+        this.codigo = codigo;
+    }
+
+    public void setNombre(String nombre) {
+        if (nombre == null || nombre.isBlank()) {
+            throw new IllegalArgumentException("El nombre de la sección es obligatorio.");
+        }
+        this.nombre = nombre;
+    }
+
+    public void setDocente(Empleado docente) {
+        if (docente == null) {
+            throw new IllegalArgumentException("El docente es obligatorio.");
+        }
+        this.docente = docente;
+    }
+
+    public void setAula(Aula aula) {
+        if (aula == null) {
+            throw new IllegalArgumentException("El aula es obligatoria.");
+        }
+        this.aula = aula;
+    }
+
+    // ===================
+
     public List<Estudiante> getEstudiantes() {
         return new ArrayList<>(estudiantes);
     }
